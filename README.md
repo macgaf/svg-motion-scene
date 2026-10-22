@@ -24,9 +24,33 @@
 
 ## 安装
 
-前置条件：使用一个会读取 `SKILL.md` 的智能体运行时。示例使用项目级或用户级 `.agents/skills` 目录。
+前置条件：使用一个会读取 `SKILL.md` 的智能体运行时。
 
-### 安装到当前项目
+### 使用 npx skills 安装
+
+需要 Node.js。`skills` CLI 会从 GitHub 拉取仓库，并引导选择安装范围与目标 Agent。
+
+项目级安装：
+
+```bash
+npx skills add macgaf/svg-motion-scene
+```
+
+只安装其中的 `svg-motion-scene` Skill：
+
+```bash
+npx skills add macgaf/svg-motion-scene --skill svg-motion-scene
+```
+
+全局安装：
+
+```bash
+npx skills add macgaf/svg-motion-scene -g
+```
+
+安装后可以用 `npx skills list`（项目级）或 `npx skills list -g`（全局）查看。
+
+### 使用 Git clone 安装到当前项目
 
 在项目根目录执行：
 
@@ -57,6 +81,18 @@ git clone https://github.com/macgaf/svg-motion-scene.git ~/.agents/skills/svg-mo
 如果 Agent 运行时使用其他 skills 目录，请按该运行时的文档放置；关键在于让本仓库的 `SKILL.md` 位于该 Skill 目录的根级。
 
 ### 更新
+
+使用 skills CLI 安装时：
+
+```bash
+# 项目级
+npx skills update svg-motion-scene
+
+# 全局
+npx skills update svg-motion-scene -g
+```
+
+使用 Git clone 安装时：
 
 ```bash
 git -C .agents/skills/svg-motion-scene pull --ff-only
