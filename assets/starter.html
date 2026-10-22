@@ -1,0 +1,1259 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>提灯水母 · 深海循环动画</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --ink: #e8f8f4;
+    --muted: #9cbdb7;
+    --faint: rgba(198, 235, 228, .46);
+    --accent: #ffcf8f;
+    --line: rgba(178, 242, 231, .22);
+    --panel: rgba(3, 22, 27, .7);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+  }
+
+  body {
+    overflow: hidden;
+    background: #031218;
+    color: var(--ink);
+    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  button { font: inherit; }
+
+  .page {
+    position: relative;
+    isolation: isolate;
+    width: 100%;
+    height: 100svh;
+    height: 100dvh;
+    min-height: 320px;
+    overflow: hidden;
+  }
+
+  .stage {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse 70% 55% at 58% 38%, #0b3a42 0%, #061f27 52%, #031218 100%);
+  }
+
+  #scene {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .page::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background:
+      linear-gradient(180deg, rgba(1, 10, 14, .62) 0%, rgba(1, 10, 14, .1) 26%, transparent 42%),
+      linear-gradient(0deg, rgba(1, 10, 14, .56) 0%, rgba(1, 10, 14, .08) 22%, transparent 38%);
+  }
+
+  .page::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    opacity: .22;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(189, 241, 232, .055) 0, rgba(189, 241, 232, .055) 1px, transparent 1px, transparent 4px);
+    mix-blend-mode: soft-light;
+  }
+
+  .masthead {
+    position: absolute;
+    z-index: 2;
+    top: max(30px, calc(env(safe-area-inset-top) + 20px));
+    left: max(34px, 4.4vw);
+    width: min(390px, 40vw);
+    pointer-events: none;
+    text-shadow: 0 2px 24px rgba(1, 9, 12, .72);
+  }
+
+  .eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 18px;
+    color: var(--accent);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .24em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .eyebrow::before {
+    content: "";
+    width: 26px;
+    height: 1px;
+    background: currentColor;
+    opacity: .7;
+  }
+
+  h1 {
+    margin: 0 0 18px;
+    color: #effcf8;
+    font-family: "Songti SC", "STSong", "Noto Serif CJK SC", "Noto Serif SC", serif;
+    font-size: clamp(42px, 4.4vw, 66px);
+    font-weight: 500;
+    letter-spacing: .075em;
+    line-height: .98;
+  }
+
+  .lede {
+    max-width: 30ch;
+    margin: 0;
+    color: rgba(224, 244, 239, .72);
+    font-size: 13px;
+    font-weight: 400;
+    letter-spacing: .035em;
+    line-height: 1.85;
+  }
+
+  .meta {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 24px 0 0;
+    color: var(--faint);
+    font-size: 9px;
+    letter-spacing: .2em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .meta span + span::before {
+    content: "/";
+    margin-right: 14px;
+    color: rgba(231, 252, 247, .2);
+  }
+
+  .controls {
+    position: absolute;
+    z-index: 3;
+    right: max(34px, 4.4vw);
+    bottom: max(28px, calc(env(safe-area-inset-bottom) + 20px));
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+
+  .status {
+    margin: 0;
+    color: rgba(221, 244, 238, .63);
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: .18em;
+    line-height: 1.4;
+    text-align: right;
+    text-transform: uppercase;
+  }
+
+  .motion-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-width: 118px;
+    min-height: 44px;
+    padding: 11px 18px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--panel);
+    color: var(--ink);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .045);
+    cursor: pointer;
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    touch-action: manipulation;
+    transition: border-color .18s ease, background-color .18s ease;
+  }
+
+  .motion-toggle:hover {
+    border-color: rgba(255, 222, 169, .55);
+    background: rgba(7, 34, 39, .82);
+  }
+
+  .motion-toggle:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+
+  .motion-toggle[data-playing="false"] {
+    border-color: rgba(255, 207, 143, .4);
+  }
+
+  .motion-icon {
+    position: relative;
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    flex: 0 0 14px;
+  }
+
+  .motion-icon::before,
+  .motion-icon::after {
+    content: "";
+    position: absolute;
+    background: var(--accent);
+  }
+
+  .motion-toggle[data-playing="true"] .motion-icon::before {
+    top: 1px;
+    left: 2px;
+    width: 3px;
+    height: 12px;
+    border-radius: 1px;
+  }
+
+  .motion-toggle[data-playing="true"] .motion-icon::after {
+    top: 1px;
+    right: 2px;
+    width: 3px;
+    height: 12px;
+    border-radius: 1px;
+  }
+
+  .motion-toggle[data-playing="false"] .motion-icon::before {
+    top: 1px;
+    left: 3px;
+    width: 0;
+    height: 0;
+    border-top: 6px solid transparent;
+    border-bottom: 6px solid transparent;
+    border-left: 10px solid var(--accent);
+    border-radius: 1px;
+    background: transparent;
+  }
+
+  .motion-toggle[data-playing="false"] .motion-icon::after {
+    display: none;
+  }
+
+  .toggle-label {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: .1em;
+    white-space: nowrap;
+  }
+
+  .noscript {
+    position: absolute;
+    z-index: 4;
+    top: 50%;
+    left: 50%;
+    width: min(320px, calc(100vw - 48px));
+    padding: 18px;
+    border: 1px solid var(--line);
+    background: rgba(2, 16, 20, .92);
+    color: var(--ink);
+    font-size: 13px;
+    line-height: 1.7;
+    transform: translate(-50%, -50%);
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  @media (max-width: 680px) {
+    .masthead {
+      top: max(26px, calc(env(safe-area-inset-top) + 16px));
+      left: max(22px, 6vw);
+      width: min(330px, 84vw);
+    }
+
+    .eyebrow {
+      margin-bottom: 14px;
+      font-size: 9px;
+      letter-spacing: .2em;
+    }
+
+    h1 {
+      margin-bottom: 13px;
+      font-size: clamp(38px, 11.4vw, 54px);
+    }
+
+    .lede {
+      max-width: 28ch;
+      font-size: 12px;
+      line-height: 1.75;
+    }
+
+    .meta { display: none; }
+
+    .controls {
+      right: max(20px, 5.5vw);
+      bottom: max(20px, calc(env(safe-area-inset-bottom) + 14px));
+      left: max(20px, 5.5vw);
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .status {
+      max-width: 15ch;
+      font-size: 8px;
+      letter-spacing: .14em;
+      text-align: left;
+    }
+
+    .motion-toggle {
+      min-width: 108px;
+      min-height: 44px;
+      padding: 10px 15px;
+    }
+  }
+
+  @media (max-height: 520px) and (orientation: landscape) {
+    .masthead {
+      top: max(16px, calc(env(safe-area-inset-top) + 10px));
+      left: max(20px, 3.2vw);
+      width: min(284px, 36vw);
+    }
+
+    .eyebrow {
+      margin-bottom: 8px;
+      font-size: 8px;
+      letter-spacing: .18em;
+    }
+
+    .eyebrow::before { width: 18px; }
+
+    h1 {
+      margin-bottom: 8px;
+      font-size: clamp(28px, 3.4vw, 38px);
+      letter-spacing: .06em;
+    }
+
+    .lede {
+      max-width: 25ch;
+      font-size: 10px;
+      line-height: 1.6;
+    }
+
+    .meta { display: none; }
+
+    .controls {
+      right: max(20px, 3.4vw);
+      bottom: max(16px, calc(env(safe-area-inset-bottom) + 10px));
+      left: auto;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    /* Keep the live region in the accessibility tree in short landscape. */
+    .status {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .motion-toggle {
+      min-width: 104px;
+      min-height: 38px;
+      padding: 8px 14px;
+    }
+
+    .toggle-label { font-size: 11px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .motion-toggle { transition: none; }
+  }
+</style>
+</head>
+<body>
+<main class="page" aria-label="提灯水母深海循环动画">
+  <section class="stage" data-stage>
+    <svg id="scene" data-scene role="img" aria-labelledby="scene-title scene-desc"
+         viewBox="-120 -10 1440 900" preserveAspectRatio="xMidYMid meet" aria-busy="true">
+      <title id="scene-title">提灯水母</title>
+      <desc id="scene-desc">深海中，一只半透明的提灯水母缓慢漂移。伞状体有节律地收束与舒展，八条触手随之摆动；一盏金色小灯由细丝悬在透明的伞内，轻轻摇晃。背景是光束、气泡、海藻和起伏的海床。</desc>
+      <defs>
+        <linearGradient id="water-grad" gradientUnits="userSpaceOnUse" x1="0" y1="-500" x2="0" y2="1100">
+          <stop offset="0" stop-color="#021116"/>
+          <stop offset=".34" stop-color="#052b33"/>
+          <stop offset=".68" stop-color="#0a454b"/>
+          <stop offset="1" stop-color="#03171d"/>
+        </linearGradient>
+        <radialGradient id="surface-glow" gradientUnits="userSpaceOnUse" cx="700" cy="20" r="660">
+          <stop offset="0" stop-color="#97efe0" stop-opacity=".22"/>
+          <stop offset=".36" stop-color="#61c4ba" stop-opacity=".11"/>
+          <stop offset="1" stop-color="#07343c" stop-opacity="0"/>
+        </radialGradient>
+        <linearGradient id="ray-grad" gradientUnits="userSpaceOnUse" x1="0" y1="-700" x2="0" y2="800">
+          <stop offset="0" stop-color="#a5f4e5" stop-opacity=".2"/>
+          <stop offset=".56" stop-color="#76d8cc" stop-opacity=".055"/>
+          <stop offset="1" stop-color="#56bdb5" stop-opacity="0"/>
+        </linearGradient>
+        <radialGradient id="halo-grad" cx="50%" cy="50%" r="50%">
+          <stop offset="0" stop-color="#77e1d2" stop-opacity=".16"/>
+          <stop offset=".54" stop-color="#44b7ad" stop-opacity=".08"/>
+          <stop offset="1" stop-color="#2c8d89" stop-opacity="0"/>
+        </radialGradient>
+        <linearGradient id="bell-fill" x1=".15" y1="0" x2=".72" y2="1">
+          <stop offset="0" stop-color="#b9fff4" stop-opacity=".4"/>
+          <stop offset=".42" stop-color="#51cfc1" stop-opacity=".25"/>
+          <stop offset=".82" stop-color="#177f7d" stop-opacity=".16"/>
+          <stop offset="1" stop-color="#0a4e55" stop-opacity=".08"/>
+        </linearGradient>
+        <linearGradient id="bell-edge" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#d5fff8" stop-opacity=".9"/>
+          <stop offset=".5" stop-color="#8ae8d9" stop-opacity=".65"/>
+          <stop offset="1" stop-color="#58b8b0" stop-opacity=".38"/>
+        </linearGradient>
+        <radialGradient id="lamp-halo" cx="50%" cy="50%" r="50%">
+          <stop offset="0" stop-color="#ffe9b5" stop-opacity=".72"/>
+          <stop offset=".28" stop-color="#ffd37f" stop-opacity=".34"/>
+          <stop offset="1" stop-color="#ffb451" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="lamp-core" cx="38%" cy="33%" r="68%">
+          <stop offset="0" stop-color="#fffbe6"/>
+          <stop offset=".48" stop-color="#ffe4a1"/>
+          <stop offset="1" stop-color="#ffb84f"/>
+        </radialGradient>
+        <linearGradient id="arm-grad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#ffe0c6" stop-opacity=".64"/>
+          <stop offset=".58" stop-color="#e5a6a0" stop-opacity=".28"/>
+          <stop offset="1" stop-color="#90ded3" stop-opacity=".02"/>
+        </linearGradient>
+        <linearGradient id="kelp-grad" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="-440">
+          <stop offset="0" stop-color="#0b3538"/>
+          <stop offset=".56" stop-color="#155f5d" stop-opacity=".8"/>
+          <stop offset="1" stop-color="#4eb2a8" stop-opacity=".36"/>
+        </linearGradient>
+        <linearGradient id="floor-grad" gradientUnits="userSpaceOnUse" x1="0" y1="850" x2="0" y2="1500">
+          <stop offset="0" stop-color="#0b3a3c"/>
+          <stop offset=".32" stop-color="#05252b"/>
+          <stop offset="1" stop-color="#020f15"/>
+        </linearGradient>
+        <radialGradient id="floor-haze" cx="50%" cy="50%" r="50%">
+          <stop offset="0" stop-color="#73c9bb" stop-opacity=".13"/>
+          <stop offset=".58" stop-color="#276b67" stop-opacity=".05"/>
+          <stop offset="1" stop-color="#072c31" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="floor-glow" cx="50%" cy="50%" r="50%">
+          <stop offset="0" stop-color="#4ba297" stop-opacity=".13"/>
+          <stop offset="1" stop-color="#0a2e31" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+
+      <rect x="-2600" y="-1700" width="5600" height="4600" fill="url(#water-grad)"/>
+      <ellipse cx="700" cy="-20" rx="760" ry="480" fill="url(#surface-glow)"/>
+      <ellipse cx="600" cy="910" rx="1100" ry="240" fill="url(#floor-glow)"/>
+
+      <g fill="none" stroke="#8de6da" stroke-linecap="round" opacity=".13">
+        <path d="M-420 -100 C 40 -170, 300 -40, 720 -105 S 1230 -60, 1650 -130" stroke-width="1.2"/>
+        <path d="M-180 -55 C 220 -110, 480 -5, 880 -70 S 1260 -20, 1570 -80" stroke-width=".8" opacity=".75"/>
+        <path d="M-610 -180 C -120 -260, 430 -150, 980 -220" stroke-width=".7" opacity=".55"/>
+      </g>
+
+      <g id="ray-layer" data-animated="light-rays" opacity=".52">
+        <path d="M 228 -800 L -30 870 L 300 870 L 626 -800 Z" fill="url(#ray-grad)"/>
+        <path d="M 548 -800 L 430 870 L 610 870 L 850 -800 Z" fill="url(#ray-grad)" opacity=".72"/>
+        <path d="M 912 -800 L 760 870 L 930 870 L 1150 -800 Z" fill="url(#ray-grad)" opacity=".44"/>
+        <path d="M 1260 -800 L 1100 870 L 1230 870 L 1450 -800 Z" fill="url(#ray-grad)" opacity=".26"/>
+      </g>
+
+      <g fill="none" stroke="#b4efe3" stroke-linecap="round" opacity=".19">
+        <path d="M 286 52 C 340 26, 380 72, 448 46 S 566 26, 632 56" stroke-width="1.2"/>
+        <path d="M 680 22 C 722 3, 770 28, 816 12 S 898 7, 945 25" stroke-width=".8" opacity=".6"/>
+        <path d="M 148 114 C 196 93, 232 119, 286 102" stroke-width=".7" opacity=".5"/>
+      </g>
+
+      <ellipse cx="600" cy="892" rx="1600" ry="170" fill="url(#floor-haze)"/>
+      <path d="M -2600 884 C -1820 832, -1230 912, -560 882 C 120 850, 650 894, 1150 872 C 1780 844, 2380 902, 3000 864 L 3000 2600 L -2600 2600 Z"
+            fill="url(#floor-grad)"/>
+      <path d="M -2600 947 C -1980 900, -1370 966, -720 936 C 20 904, 660 952, 1260 927 C 1860 904, 2460 951, 3000 922 L 3000 2600 L -2600 2600 Z"
+            fill="#021218" opacity=".86"/>
+      <g fill="none" stroke="#7bc2b6" stroke-linecap="round">
+        <path d="M -2200 1010 C -1600 968, -1120 1036, -460 1002 S 820 983, 1460 1018 S 2500 989, 3400 1016" opacity=".06" stroke-width="1.2"/>
+        <path d="M -1900 1110 C -1180 1060, -540 1128, 110 1094 S 1420 1068, 2080 1116 S 2860 1100, 3300 1122" opacity=".045" stroke-width=".9"/>
+        <path d="M -2200 1236 C -1500 1196, -960 1248, -220 1210 S 1120 1252, 1820 1214 S 2740 1240, 3220 1208" opacity=".032" stroke-width=".8"/>
+      </g>
+      <g fill="#062b30">
+        <path d="M -360 927 C -315 862, -230 852, -174 921 C -248 948, -315 957, -402 948 Z"/>
+        <path d="M 1030 913 C 1070 856, 1150 848, 1210 917 C 1158 941, 1082 950, 1012 938 Z"/>
+        <path d="M 382 942 C 417 896, 482 890, 524 944 C 481 959, 423 963, 366 953 Z" opacity=".7"/>
+        <path d="M 640 977 C 668 933, 724 928, 760 980 C 719 992, 676 995, 628 985 Z" opacity=".42"/>
+        <path d="M 80 1032 C 108 984, 170 980, 206 1038 C 160 1052, 118 1053, 70 1042 Z" opacity=".32"/>
+      </g>
+      <g fill="#a7eee2" opacity=".16">
+        <circle cx="174" cy="963" r="1.2"/>
+        <circle cx="468" cy="1018" r=".9"/>
+        <circle cx="872" cy="991" r="1.1"/>
+        <circle cx="1129" cy="1054" r=".8"/>
+        <circle cx="731" cy="1138" r="1.05"/>
+        <circle cx="288" cy="1159" r=".8"/>
+        <circle cx="1004" cy="1191" r=".75"/>
+      </g>
+
+      <g fill="none" stroke="#b9fff2" stroke-linecap="round">
+        <path d="M -120 675 C 120 620, 300 704, 536 655 S 1000 620, 1230 692" opacity=".055" stroke-width="1"/>
+        <path d="M 190 770 C 402 730, 586 800, 850 753 S 1150 742, 1320 785" opacity=".04" stroke-width=".8"/>
+      </g>
+      <g id="kelp-layer" data-animated="kelp"></g>
+      <g id="bubble-layer" data-animated="bubbles"></g>
+      <g id="subject-layer"></g>
+      <g id="mote-layer" aria-hidden="true"></g>
+
+    </svg>
+    <noscript>
+      <p class="noscript">这个单文件 SVG 动画需要启用 JavaScript 才能播放。场景说明仍可通过页面标题读取。</p>
+    </noscript>
+  </section>
+
+  <header class="masthead">
+    <p class="eyebrow">Deep water study · No. 01</p>
+    <h1>提灯水母</h1>
+    <p class="lede">它把一盏小灯收在透明的伞里。每一次收束与舒展，触须都晚半拍抵达。</p>
+    <p class="meta"><span>12.0 s loop</span><span>Inline SVG</span><span>No. 01</span></p>
+  </header>
+
+  <footer class="controls">
+    <p class="status" id="motion-status" aria-live="polite">循环播放中 · 12 秒</p>
+    <button class="motion-toggle" type="button" data-motion-toggle data-playing="true" aria-controls="scene">
+      <span class="motion-icon" aria-hidden="true"></span>
+      <span class="toggle-label">暂停动画</span>
+    </button>
+  </footer>
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  const NS = "http://www.w3.org/2000/svg";
+  const TAU = Math.PI * 2;
+  const PERIOD_MS = 12000;
+  const REDUCED_TIME_MS = 1600;
+  const AUDIT_MODE = new URLSearchParams(window.location.search).has("audit");
+
+  const stage = document.querySelector("[data-stage]");
+  const scene = document.querySelector("[data-scene]");
+  const subjectLayer = document.getElementById("subject-layer");
+  const kelpLayer = document.getElementById("kelp-layer");
+  const bubbleLayer = document.getElementById("bubble-layer");
+  const moteLayer = document.getElementById("mote-layer");
+  const rayLayer = document.getElementById("ray-layer");
+  const toggleButton = document.querySelector("[data-motion-toggle]");
+  const toggleLabel = toggleButton.querySelector(".toggle-label");
+  const statusText = document.getElementById("motion-status");
+  const reduceQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+  const GEOM = Object.freeze({
+    origin: { x: 600, y: 430 },
+    camera: {
+      centerX: 600,
+      centerY: 440,
+      minWidth: 780,
+      minHeight: 900
+    },
+    bell: {
+      rx: 224,
+      ry: 188,
+      scallop: 15,
+      segments: 8
+    },
+    tentacles: [
+      { rootU: -0.875, length: 258, phase: 0.2, width: 2.1, alpha: 0.74 },
+      { rootU: -0.625, length: 292, phase: 0.9, width: 2.6, alpha: 0.62 },
+      { rootU: -0.375, length: 274, phase: 1.7, width: 1.9, alpha: 0.8 },
+      { rootU: -0.125, length: 312, phase: 2.4, width: 2.3, alpha: 0.58 },
+      { rootU: 0.125, length: 286, phase: 3.2, width: 2.5, alpha: 0.7 },
+      { rootU: 0.375, length: 302, phase: 4.0, width: 1.9, alpha: 0.62 },
+      { rootU: 0.625, length: 268, phase: 4.8, width: 2.6, alpha: 0.78 },
+      { rootU: 0.875, length: 246, phase: 5.5, width: 2.1, alpha: 0.66 }
+    ],
+    arms: [
+      { x: -36, length: 192, phase: 0.3, width: 23 },
+      { x: -6, length: 224, phase: 1.4, width: 19 },
+      { x: 24, length: 203, phase: 2.4, width: 21 },
+      { x: 46, length: 175, phase: 3.7, width: 15 }
+    ],
+    lantern: {
+      cordLength: 80,
+      radius: 13,
+      maxSwing: 0.085
+    }
+  });
+
+  const bubbleState = [];
+  const kelpState = [];
+  let playing = false;
+  let hidden = document.hidden;
+  let simMs = reduceQuery.matches ? REDUCED_TIME_MS : 0;
+  let lastFrameMs = null;
+  let rafId = null;
+
+  function make(tag, attrs) {
+    const node = document.createElementNS(NS, tag);
+    if (attrs) {
+      for (const name of Object.keys(attrs)) node.setAttribute(name, attrs[name]);
+    }
+    return node;
+  }
+
+  function norm(ms) {
+    return ((ms % PERIOD_MS) + PERIOD_MS) % PERIOD_MS;
+  }
+
+  function mulberry32(seed) {
+    let a = seed >>> 0;
+    return function () {
+      a |= 0;
+      a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function fitCamera() {
+    const rect = stage.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const aspect = rect.width / rect.height;
+    const needAspect = GEOM.camera.minWidth / GEOM.camera.minHeight;
+    let width;
+    let height;
+    if (aspect >= needAspect) {
+      height = GEOM.camera.minHeight;
+      width = height * aspect;
+    } else {
+      width = GEOM.camera.minWidth;
+      height = width / aspect;
+    }
+    const x = GEOM.camera.centerX - width / 2;
+    const y = GEOM.camera.centerY - height / 2;
+    scene.setAttribute("viewBox", x.toFixed(2) + " " + y.toFixed(2) + " " + width.toFixed(2) + " " + height.toFixed(2));
+  }
+
+  // ---------- Subject: one geometry source, one render path ----------
+
+  const subject = make("g", {
+    "data-subject": "lantern-jelly",
+    "data-animated": "jelly",
+    "data-part": "jelly"
+  });
+  subjectLayer.appendChild(subject);
+
+  const halo = make("ellipse", {
+    cx: 0,
+    cy: -18,
+    rx: 282,
+    ry: 246,
+    fill: "url(#halo-grad)"
+  });
+  subject.appendChild(halo);
+
+  const tentacleGroup = make("g", { "data-part": "tentacles" });
+  subject.appendChild(tentacleGroup);
+
+  const tentacleNodes = GEOM.tentacles.map(function (spec, index) {
+    const glow = make("path", {
+      fill: "none",
+      stroke: "#6ce0d1",
+      "stroke-width": spec.width * 4.8,
+      "stroke-linecap": "round",
+      opacity: "0.075",
+      "data-part": "tentacle-glow-" + index
+    });
+    const core = make("path", {
+      fill: "none",
+      stroke: index % 2 === 0 ? "#9cefe3" : "#bfeee4",
+      "stroke-width": spec.width,
+      "stroke-linecap": "round",
+      opacity: String(spec.alpha),
+      "data-part": "tentacle-" + index
+    });
+    const tip = make("circle", {
+      r: "1.45",
+      fill: "#ffd9b0",
+      opacity: "0.58",
+      "data-part": "tentacle-tip-" + index
+    });
+    tentacleGroup.appendChild(glow);
+    tentacleGroup.appendChild(core);
+    tentacleGroup.appendChild(tip);
+    return { glow: glow, core: core, tip: tip, spec: spec };
+  });
+
+  const armGroup = make("g", { "data-part": "oral-arms" });
+  subject.appendChild(armGroup);
+
+  const armNodes = GEOM.arms.map(function (spec, index) {
+    const arm = make("path", {
+      fill: "url(#arm-grad)",
+      opacity: "0.78",
+      "data-part": "oral-arm-" + index
+    });
+    const vein = make("path", {
+      fill: "none",
+      stroke: "#ffe1c9",
+      "stroke-width": "0.8",
+      opacity: "0.2",
+      "stroke-linecap": "round"
+    });
+    armGroup.appendChild(arm);
+    armGroup.appendChild(vein);
+    return { arm: arm, vein: vein, spec: spec };
+  });
+
+  const bellGroup = make("g", { "data-part": "bell" });
+  subject.appendChild(bellGroup);
+
+  const bellFill = make("path", {
+    fill: "url(#bell-fill)",
+    stroke: "none",
+    "data-part": "bell-fill"
+  });
+  bellGroup.appendChild(bellFill);
+
+  const lantern = make("g", { "data-part": "lantern" });
+  const lanternCord = make("line", {
+    stroke: "#ffe1a9",
+    "stroke-width": "1",
+    "stroke-linecap": "round",
+    opacity: "0.68"
+  });
+  const lanternHalo = make("circle", {
+    fill: "url(#lamp-halo)",
+    opacity: "0.92"
+  });
+  const lanternOrb = make("circle", {
+    fill: "url(#lamp-core)",
+    stroke: "#fff3c9",
+    "stroke-width": "0.7",
+    opacity: "0.98"
+  });
+  const lanternSpark = make("circle", {
+    fill: "#fffbe9",
+    opacity: "0.9"
+  });
+  lantern.appendChild(lanternCord);
+  lantern.appendChild(lanternHalo);
+  lantern.appendChild(lanternOrb);
+  lantern.appendChild(lanternSpark);
+  bellGroup.appendChild(lantern);
+
+  const veilGroup = make("g", { "data-part": "bell-veins" });
+  bellGroup.appendChild(veilGroup);
+
+  const veinNodes = [];
+  for (let i = 0; i < GEOM.bell.segments; i += 1) {
+    veinNodes.push(make("path", {
+      fill: "none",
+      stroke: "#b9fff5",
+      "stroke-width": i % 2 === 0 ? "0.95" : "0.65",
+      opacity: i % 2 === 0 ? "0.22" : "0.13",
+      "stroke-linecap": "round"
+    }));
+    veilGroup.appendChild(veinNodes[veinNodes.length - 1]);
+  }
+
+  const spotGroup = make("g", { "data-part": "bell-spots" });
+  bellGroup.appendChild(spotGroup);
+  const SPOT_LAYOUT = [
+    [-0.5, -0.54, 3.1, .23],
+    [-0.19, -0.76, 2.2, .18],
+    [0.1, -0.61, 3.7, .2],
+    [0.41, -0.45, 2.5, .15],
+    [0.64, -0.18, 1.9, .2],
+    [-0.64, -0.19, 1.6, .12],
+    [-0.25, -0.32, 1.5, .14],
+    [0.32, -0.27, 2.8, .12]
+  ];
+  const spotNodes = SPOT_LAYOUT.map(function (spot) {
+    const node = make("circle", {
+      fill: "#d8fff8",
+      opacity: String(spot[3])
+    });
+    spotGroup.appendChild(node);
+    return { node: node, spot: spot };
+  });
+
+  const bellInner = make("path", {
+    fill: "none",
+    stroke: "#d9fff9",
+    "stroke-width": "1.1",
+    "stroke-linecap": "round",
+    opacity: "0.3"
+  });
+  bellGroup.appendChild(bellInner);
+
+  const bellOutline = make("path", {
+    fill: "none",
+    stroke: "url(#bell-edge)",
+    "stroke-width": "1.8",
+    "stroke-linejoin": "round",
+    "data-part": "bell-outline"
+  });
+  bellGroup.appendChild(bellOutline);
+
+  const rimOutline = make("path", {
+    fill: "none",
+    stroke: "#c8fff7",
+    "stroke-width": "2.1",
+    "stroke-linecap": "round",
+    opacity: "0.56",
+    "data-part": "bell-rim"
+  });
+  bellGroup.appendChild(rimOutline);
+
+  const rimDotGroup = make("g", { "data-part": "rim-dots" });
+  bellGroup.appendChild(rimDotGroup);
+  const rimDotNodes = GEOM.tentacles.map(function () {
+    const dot = make("circle", {
+      r: "1.9",
+      fill: "#e8fff8",
+      opacity: "0.66"
+    });
+    rimDotGroup.appendChild(dot);
+    return dot;
+  });
+
+  const lanternAnchor = make("circle", {
+    r: "1.9",
+    fill: "#ffe5b5",
+    opacity: "0.82",
+    "data-part": "lantern-anchor"
+  });
+  bellGroup.appendChild(lanternAnchor);
+
+  function buildBellPath(rx, ry, scallop, segments) {
+    const step = (rx * 2) / segments;
+    const boundaries = [];
+    for (let i = 0; i <= segments; i += 1) boundaries.push(-rx + step * i);
+    const topY = -ry * 1.15;
+    let d = "M " + (-rx) + " 0 C " + (-rx * 1.02) + " " + (-ry * 0.72) + ", " +
+            (-rx * 0.62) + " " + (-ry * 1.08) + ", 0 " + topY +
+            " C " + (rx * 0.62) + " " + (-ry * 1.08) + ", " + (rx * 1.02) + " " +
+            (-ry * 0.72) + ", " + rx + " 0";
+    for (let i = segments - 1; i >= 0; i -= 1) {
+      const left = boundaries[i];
+      const right = boundaries[i + 1];
+      const mid = (left + right) / 2;
+      d += " Q " + mid + " " + (scallop * 2) + ", " + left + " 0";
+    }
+    d += " Z";
+    return { d: d, boundaries: boundaries, topY: topY };
+  }
+
+  function buildRimPath(rx, ry, scallop, segments) {
+    const step = (rx * 2) / segments;
+    const boundaries = [];
+    for (let i = 0; i <= segments; i += 1) boundaries.push(-rx + step * i);
+    let d = "M " + rx + " 0";
+    for (let i = segments - 1; i >= 0; i -= 1) {
+      const left = boundaries[i];
+      const right = boundaries[i + 1];
+      d += " Q " + ((left + right) / 2) + " " + (scallop * 2) + ", " + left + " 0";
+    }
+    return d;
+  }
+
+  function renderSubject(time) {
+    const driftX = 12 * Math.sin(TAU * time / PERIOD_MS);
+    const driftY = 18 * Math.sin(TAU * time / PERIOD_MS + 0.7);
+    const tilt = 0.85 * Math.sin(TAU * time / PERIOD_MS + 0.18);
+    subject.setAttribute("transform", "translate(" +
+      (GEOM.origin.x + driftX).toFixed(3) + " " +
+      (GEOM.origin.y + driftY).toFixed(3) + ") rotate(" + tilt.toFixed(3) + ")");
+
+    const pulseWave = Math.sin(TAU * 3 * time / PERIOD_MS - Math.PI / 2);
+    const pulse = Math.pow((pulseWave + 1) / 2, 1.35);
+    const rx = GEOM.bell.rx * (1 + 0.055 * pulse);
+    const ry = GEOM.bell.ry * (1 - 0.035 * pulse);
+    const scallop = GEOM.bell.scallop * (1 - 0.025 * pulse);
+    const bell = buildBellPath(rx, ry, scallop, GEOM.bell.segments);
+    const rimPath = buildRimPath(rx, ry, scallop, GEOM.bell.segments);
+    const step = (rx * 2) / GEOM.bell.segments;
+    const roots = [];
+
+    for (let i = 0; i < GEOM.bell.segments; i += 1) {
+      roots.push({
+        x: -rx + step * (i + 0.5),
+        y: scallop,
+        u: -1 + (i + 0.5) * (2 / GEOM.bell.segments)
+      });
+    }
+
+    bellFill.setAttribute("d", bell.d);
+    bellOutline.setAttribute("d", bell.d);
+    rimOutline.setAttribute("d", rimPath);
+    halo.setAttribute("rx", (282 + pulse * 5).toFixed(2));
+    halo.setAttribute("opacity", (0.86 + pulse * 0.08).toFixed(3));
+
+    for (let i = 0; i < tentacleNodes.length; i += 1) {
+      const item = tentacleNodes[i];
+      const spec = item.spec;
+      const root = roots.find(function (candidate) {
+        return Math.abs(candidate.u - spec.rootU) < 1e-9;
+      });
+      if (!root) {
+        throw new Error("tentacle rootU does not match any bell rim root: " + spec.rootU);
+      }
+      const phase = TAU * 2 * time / PERIOD_MS + spec.phase;
+      const swayA = Math.sin(phase) * 23 + Math.sin(phase * 0.5 + 0.7) * 7;
+      const swayB = Math.sin(phase + 0.85) * 17;
+      const tipX = root.x + 30 * Math.sin(phase + 1.4);
+      const tipY = root.y + spec.length;
+      const d = "M " + root.x.toFixed(2) + " " + root.y.toFixed(2) +
+        " C " + (root.x + swayA * 0.36).toFixed(2) + " " + (root.y + spec.length * 0.25).toFixed(2) +
+        ", " + (root.x + swayB * 0.75).toFixed(2) + " " + (root.y + spec.length * 0.55).toFixed(2) +
+        ", " + (root.x + swayB).toFixed(2) + " " + (root.y + spec.length * 0.74).toFixed(2) +
+        " S " + (tipX + 8).toFixed(2) + " " + (root.y + spec.length * 0.93).toFixed(2) +
+        ", " + tipX.toFixed(2) + " " + tipY.toFixed(2);
+      item.glow.setAttribute("d", d);
+      item.core.setAttribute("d", d);
+      item.tip.setAttribute("cx", tipX.toFixed(2));
+      item.tip.setAttribute("cy", tipY.toFixed(2));
+      const rimDot = rimDotNodes[i % rimDotNodes.length];
+      rimDot.setAttribute("cx", root.x.toFixed(2));
+      rimDot.setAttribute("cy", root.y.toFixed(2));
+    }
+
+    for (let i = 0; i < armNodes.length; i += 1) {
+      const item = armNodes[i];
+      const spec = item.spec;
+      const phase = TAU * 2 * time / PERIOD_MS + spec.phase;
+      const swayA = Math.sin(phase) * 17;
+      const swayB = Math.sin(phase + 1.1) * 13;
+      const baseX = spec.x;
+      const half = spec.width / 2;
+      const tipX = baseX + swayA + swayB * 0.6;
+      const tipY = spec.length;
+      const d = "M " + (baseX - half).toFixed(2) + " -2" +
+        " C " + (baseX - half - 12).toFixed(2) + " " + (spec.length * 0.24).toFixed(2) +
+        ", " + (baseX + swayA - 20).toFixed(2) + " " + (spec.length * 0.48).toFixed(2) +
+        ", " + (baseX + swayA - 4).toFixed(2) + " " + (spec.length * 0.65).toFixed(2) +
+        " C " + (baseX + swayA + 4).toFixed(2) + " " + (spec.length * 0.82).toFixed(2) +
+        ", " + (tipX - 5).toFixed(2) + " " + (tipY * 0.94).toFixed(2) +
+        ", " + tipX.toFixed(2) + " " + tipY.toFixed(2) +
+        " C " + (tipX + 8).toFixed(2) + " " + (tipY * 0.83).toFixed(2) +
+        ", " + (baseX + swayA + 12).toFixed(2) + " " + (spec.length * 0.6).toFixed(2) +
+        ", " + (baseX + swayA + half).toFixed(2) + " " + (spec.length * 0.51).toFixed(2) +
+        " C " + (baseX + half + 5).toFixed(2) + " " + (spec.length * 0.3).toFixed(2) +
+        ", " + (baseX + half + 6).toFixed(2) + " " + (spec.length * 0.1).toFixed(2) +
+        ", " + (baseX + half).toFixed(2) + " -2 Z";
+      item.arm.setAttribute("d", d);
+      item.vein.setAttribute("d", "M " + baseX.toFixed(2) + " 10 C " +
+        (baseX + swayA * 0.2).toFixed(2) + " " + (spec.length * 0.34).toFixed(2) +
+        ", " + (baseX + swayA * 0.6).toFixed(2) + " " + (spec.length * 0.58).toFixed(2) +
+        ", " + (baseX + swayA * 0.86).toFixed(2) + " " + (spec.length * 0.84).toFixed(2));
+    }
+
+    const topY = bell.topY;
+    const apexY = topY;
+    const swing = GEOM.lantern.maxSwing * Math.sin(TAU * 2 * time / PERIOD_MS + 0.5);
+    lanternAnchor.setAttribute("cx", "0");
+    lanternAnchor.setAttribute("cy", apexY.toFixed(2));
+    lantern.setAttribute("transform", "rotate(" + (swing * 180 / Math.PI).toFixed(3) + " 0 " + apexY.toFixed(2) + ")");
+    lanternCord.setAttribute("x1", "0");
+    lanternCord.setAttribute("y1", apexY.toFixed(2));
+    lanternCord.setAttribute("x2", "0");
+    lanternCord.setAttribute("y2", (apexY + GEOM.lantern.cordLength).toFixed(2));
+    const orbY = apexY + GEOM.lantern.cordLength + GEOM.lantern.radius;
+    lanternHalo.setAttribute("cx", "0");
+    lanternHalo.setAttribute("cy", orbY.toFixed(2));
+    lanternHalo.setAttribute("r", "64");
+    lanternOrb.setAttribute("cx", "0");
+    lanternOrb.setAttribute("cy", orbY.toFixed(2));
+    lanternOrb.setAttribute("r", String(GEOM.lantern.radius));
+    lanternSpark.setAttribute("cx", "-3.2");
+    lanternSpark.setAttribute("cy", (orbY - 3.5).toFixed(2));
+    lanternSpark.setAttribute("r", "3.2");
+
+    for (let i = 0; i < veinNodes.length; i += 1) {
+      const root = roots[(i + 1) % roots.length];
+      const ex = root.x * 0.92;
+      const ey = root.y;
+      veinNodes[i].setAttribute("d", "M 0 " + (topY + 8).toFixed(2) +
+        " C " + (ex * 0.22).toFixed(2) + " " + (topY * 0.6).toFixed(2) +
+        ", " + (ex * 0.76).toFixed(2) + " " + (-ry * 0.26).toFixed(2) +
+        ", " + ex.toFixed(2) + " " + ey.toFixed(2));
+    }
+
+    for (let i = 0; i < spotNodes.length; i += 1) {
+      const item = spotNodes[i];
+      item.node.setAttribute("cx", (item.spot[0] * rx).toFixed(2));
+      item.node.setAttribute("cy", (item.spot[1] * ry).toFixed(2));
+      item.node.setAttribute("r", (item.spot[2] * (1 + pulse * 0.04)).toFixed(2));
+    }
+
+    bellInner.setAttribute("d", "M " + (-rx * 0.78).toFixed(2) + " " + (-ry * 0.28).toFixed(2) +
+      " C " + (-rx * 0.56).toFixed(2) + " " + (-ry * 0.76).toFixed(2) +
+      ", " + (-rx * 0.12).toFixed(2) + " " + (-ry * 0.94).toFixed(2) +
+      ", " + (rx * 0.29).toFixed(2) + " " + (-ry * 0.7).toFixed(2));
+  }
+
+  // ---------- Ambient layers ----------
+
+  function buildKelp() {
+    const specs = [
+      { x: -120, y: 916, scale: 1.05, phase: 0.4, opacity: 0.52 },
+      { x: 244, y: 906, scale: 0.83, phase: 2.2, opacity: 0.72 },
+      { x: 956, y: 908, scale: 0.72, phase: 4.1, opacity: 0.58 },
+      { x: 1360, y: 922, scale: 1.18, phase: 1.3, opacity: 0.45 }
+    ];
+    const bladeShapes = [
+      { d: "M 0 0 C -31 -78, -8 -144, -25 -218 C -34 -278, -9 -326, -5 -380", w: 8, o: .48 },
+      { d: "M 7 1 C 34 -88, 7 -158, 35 -239 C 44 -300, 24 -344, 20 -415", w: 5, o: .34 },
+      { d: "M -5 0 C -51 -93, -23 -168, -56 -246 C -69 -292, -52 -322, -57 -354", w: 3.2, o: .26 }
+    ];
+
+    specs.forEach(function (spec, index) {
+      const group = make("g", {
+        "data-part": "kelp-" + index,
+        transform: "translate(" + spec.x + " " + spec.y + ") scale(" + spec.scale + ")"
+      });
+      group.setAttribute("opacity", String(spec.opacity));
+      bladeShapes.forEach(function (blade, bladeIndex) {
+        const path = make("path", {
+          d: blade.d,
+          fill: "none",
+          stroke: "url(#kelp-grad)",
+          "stroke-width": String(blade.w),
+          "stroke-linecap": "round",
+          opacity: String(blade.o + bladeIndex * 0.04)
+        });
+        group.appendChild(path);
+      });
+      const seedHead = make("ellipse", {
+        cx: "-10",
+        cy: "-392",
+        rx: "7",
+        ry: "18",
+        fill: "#2e837d",
+        opacity: ".3",
+        transform: "rotate(24 -10 -392)"
+      });
+      group.appendChild(seedHead);
+      kelpLayer.appendChild(group);
+      kelpState.push({ node: group, spec: spec });
+    });
+  }
+
+  function buildBubbles() {
+    const rand = mulberry32(20261020);
+    for (let i = 0; i < 30; i += 1) {
+      const radius = 0.9 + rand() * 2.8;
+      const bubble = make("circle", {
+        r: radius.toFixed(2),
+        fill: "rgba(180, 249, 239, .035)",
+        stroke: "#a5eee4",
+        "stroke-width": (0.5 + rand() * 0.55).toFixed(2)
+      });
+      bubbleLayer.appendChild(bubble);
+      bubbleState.push({
+        node: bubble,
+        baseX: -360 + rand() * 2100,
+        phase: rand(),
+        wobble: 7 + rand() * 24,
+        alpha: 0.15 + rand() * 0.3
+      });
+    }
+  }
+
+  function buildMotes() {
+    const rand = mulberry32(90210);
+    for (let i = 0; i < 34; i += 1) {
+      const mote = make("circle", {
+        cx: (-420 + rand() * 2100).toFixed(1),
+        cy: (100 + rand() * 720).toFixed(1),
+        r: (0.45 + rand() * 1.15).toFixed(2),
+        fill: "#bdf8ee",
+        opacity: (0.08 + rand() * 0.2).toFixed(2)
+      });
+      moteLayer.appendChild(mote);
+    }
+  }
+
+  function renderAmbient(time) {
+    const rayPulse = 0.5 + 0.14 * Math.sin(TAU * 3 * time / PERIOD_MS + 0.9);
+    rayLayer.setAttribute("opacity", rayPulse.toFixed(3));
+
+    for (let i = 0; i < kelpState.length; i += 1) {
+      const item = kelpState[i];
+      const angle = 1.25 * Math.sin(TAU * time / PERIOD_MS + item.spec.phase);
+      item.node.setAttribute("transform", "translate(" + item.spec.x + " " + item.spec.y +
+        ") rotate(" + angle.toFixed(3) + ") scale(" + item.spec.scale + ")");
+    }
+
+    for (let i = 0; i < bubbleState.length; i += 1) {
+      const item = bubbleState[i];
+      const progress = (time / PERIOD_MS + item.phase) % 1;
+      const y = 1080 - progress * 1640;
+      const x = item.baseX + Math.sin(TAU * 2 * progress + item.phase * 6.2) * item.wobble;
+      const alpha = Math.pow(Math.sin(Math.PI * progress), 1.35) * item.alpha;
+      item.node.setAttribute("cx", x.toFixed(2));
+      item.node.setAttribute("cy", y.toFixed(2));
+      item.node.setAttribute("opacity", alpha.toFixed(4));
+    }
+  }
+
+  function renderAt(ms) {
+    const time = norm(ms);
+    renderSubject(time);
+    renderAmbient(time);
+  }
+
+  // ---------- Single clock and interaction ----------
+
+  function syncControl() {
+    toggleButton.setAttribute("data-playing", playing ? "true" : "false");
+    toggleLabel.textContent = playing ? "暂停动画" : "播放动画";
+    if (playing) {
+      statusText.textContent = reduceQuery.matches ? "手动播放 · 12s" : "循环中 · 12s";
+    } else {
+      statusText.textContent = reduceQuery.matches ? "减少动态" : "已暂停";
+    }
+  }
+
+  function stopLoop() {
+    if (rafId !== null) {
+      cancelAnimationFrame(rafId);
+      rafId = null;
+    }
+    lastFrameMs = null;
+  }
+
+  function startLoop() {
+    if (!playing || hidden || rafId !== null) return;
+    lastFrameMs = null;
+    rafId = requestAnimationFrame(tick);
+  }
+
+  function tick(now) {
+    rafId = null;
+    if (!playing || hidden) return;
+    if (lastFrameMs !== null) simMs += now - lastFrameMs;
+    lastFrameMs = now;
+    renderAt(simMs);
+    rafId = requestAnimationFrame(tick);
+  }
+
+  function play() {
+    if (playing) return;
+    playing = true;
+    syncControl();
+    startLoop();
+  }
+
+  function pause() {
+    if (!playing) return;
+    playing = false;
+    stopLoop();
+    renderAt(simMs);
+    syncControl();
+  }
+
+  function togglePlayback() {
+    if (playing) pause();
+    else play();
+  }
+
+  toggleButton.addEventListener("click", togglePlayback);
+
+  document.addEventListener("visibilitychange", function () {
+    hidden = document.hidden;
+    if (hidden) {
+      stopLoop();
+      return;
+    }
+    // Restart from the stored phase; never add background time to simMs.
+    startLoop();
+  });
+
+  function onReducedMotionChange(event) {
+    if (event.matches && playing) {
+      pause();
+    }
+    syncControl();
+  }
+
+  if (typeof reduceQuery.addEventListener === "function") {
+    reduceQuery.addEventListener("change", onReducedMotionChange);
+  } else if (typeof reduceQuery.addListener === "function") {
+    reduceQuery.addListener(onReducedMotionChange);
+  }
+
+  // ---------- Boot ----------
+
+  buildKelp();
+  buildBubbles();
+  buildMotes();
+  fitCamera();
+  if (typeof ResizeObserver === "function") {
+    const observer = new ResizeObserver(fitCamera);
+    observer.observe(stage);
+  } else {
+    window.addEventListener("resize", fitCamera, { passive: true });
+  }
+
+  scene.setAttribute("aria-busy", "false");
+  renderAt(simMs);
+
+  if (!reduceQuery.matches) {
+    playing = true;
+    syncControl();
+    startLoop();
+  } else {
+    playing = false;
+    syncControl();
+  }
+
+  if (AUDIT_MODE) {
+    window.__svgSceneAudit = Object.freeze({
+      periodMs: PERIOD_MS,
+      renderAt: renderAt,
+      getState: function () {
+        return {
+          playing: playing,
+          timeMs: norm(simMs),
+          reducedMotion: reduceQuery.matches,
+          hidden: document.hidden
+        };
+      }
+    });
+  }
+})();
+</script>
+</body>
+</html>
