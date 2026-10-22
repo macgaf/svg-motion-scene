@@ -1,15 +1,15 @@
 # SVG Motion Scene
 
-一个面向智能体（Agent）的 Skill：把一个场景要求，转化为**可直接打开的单文件 SVG 动画 HTML**，并用真实浏览器完成结构、运动、循环、画幅和交互验收。
+一个面向智能体（Agent）的 Skill：把场景要求转化为**可直接打开的单文件 SVG 动画 HTML**，同时提供完整的工作流、可运行示例和验收工具。
 
-它不是动画库，也不是 CLI。它是一套工作流 + 可运行示例 + 验收工具，帮助 Agent 在生成 SVG 动画时不只追求“能动”，还同时满足：
+生成过程关注：
 
 - 主体、部件、连接、包含和遮挡关系清楚；
 - 几何只有一个权威来源，静态绘制与动画代码不各写一套坐标；
 - 场景运动由同一个 JavaScript 时钟驱动，暂停、恢复和减少动态一致；
 - 循环边界的位置与速度连续；
 - 适配手机竖屏、手机横屏和桌面横屏；
-- 视觉结果经过实际浏览器检查，而不是只检查代码里有没有动画声明。
+- 视觉结果由实际浏览器验收。
 
 ## 仓库内容
 
@@ -69,10 +69,11 @@ git -C .agents/skills/svg-motion-scene pull --ff-only
 安装完成后，在对话中直接描述场景，并点名调用该 Skill。例如：
 
 ```text
-用 svg-motion-scene 生成一个「雨夜鲸群穿过城市」的 SVG 动画。
-场景名：雨夜鲸群
-模型：deepseek-flash
-思考强度：高
+用 svg-motion-scene 生成鲸群穿过雨夜城市的 SVG 动画。
+
+用 svg-motion-scene 做一个纸鸢掠过麦田的单文件循环动画，放在当前目录。
+
+用 svg-motion-scene 生成机械蜂鸟悬停在玻璃温室中的 SVG 动画，适配手机和桌面。
 ```
 
 Agent 会按 [SKILL.md](SKILL.md) 的流程先建立场景契约与唯一几何，再实现页面并做验收。
@@ -92,49 +93,9 @@ Agent 会按 [SKILL.md](SKILL.md) 的流程先建立场景契约与唯一几何�
 - 包含移动端 viewport、暂停/继续控件和可访问的 SVG 文本说明；
 - 支持 `prefers-reduced-motion` 和页面可见性恢复。
 
-生成完成后直接在浏览器打开该 HTML 即可，不需要启动服务器或安装依赖。
+生成完成后，直接用浏览器打开该 HTML。
 
-## 浏览器验收
+## 限制
 
-`scripts/audit_scene.mjs` 需要 Node.js 和开发期的 Playwright + Chromium。脚本在 Node v22.22.0、Playwright 1.62 上验证过。**生成的动画 HTML 本身不依赖它们。**
-
-```bash
-npm install --no-save playwright
-npx playwright install chromium
-```
-
-以下命令以 Skill 安装在项目的 `.agents/skills/svg-motion-scene` 为例；如果当前就在 Skill 仓库目录内，把 `scripts/`、`tests/` 路径相应缩短即可。
-
-运行通用验收并生成三种画幅的截图：
-
-```bash
-node .agents/skills/svg-motion-scene/scripts/audit_scene.mjs \
-  path/to/your-scene.html \
-  --shots .audit
-```
-
-脚本会检查：
-
-- 无外部资源和实际网络/文件资源请求；
-- viewport、SVG 标题/说明、暂停按钮和键盘操作；
-- 390×844、844×390、1440×900 三种画幅的主体边界、安全边距与控件遮挡；
-- 暂停后的画面与时钟冻结、恢复后的相位连续性；
-- 减少动态下的默认暂停和显式播放；
-- 页面隐藏再恢复时是否追赶时间；
-- 若页面提供 `window.__svgSceneAudit`，检查循环边界的位置、透明度和有限差分速度。
-
-示例场景的专用关系测试：
-
-```bash
-node .agents/skills/svg-motion-scene/tests/starter-relations.mjs
-```
-
-该测试会从实际渲染的 SVG 路径检查触手连接、灯球包含、吊点、灯球刚性和灯绳长度。它**只适用于与 starter 结构对应的场景**；生成新场景时，应按 [references/verification.md](references/verification.md) 为它另写断言。
-
-## 已验证范围与限制
-
-- 通用审计和示例测试已在 Chromium + Playwright 中实际运行，覆盖三种目标画幅、暂停/恢复、减少动态和循环边界。
-- 通用脚本不能证明任意场景的语义、接触、遮挡与物理约束；这些必须按场景另写检查，不能把“0 FAIL”当作所有关系的证明。
-- 真实移动端 Safari/Chrome、Firefox、操作系统级标签页挂起和真实屏幕阅读器仍有待在使用环境中验证；脚本中的页面可见性测试使用 DOM 事件模拟。
-- 视觉截图需要人工查看，脚本只负责生成和提示。
-- 验收脚本**不是**生产依赖，不会被写入生成的 HTML。
+- 通用审查无法替代每个场景自己的语义、接触和遮挡检查。
+- 真实移动端浏览器、操作系统级标签页挂起和真实屏幕阅读器仍需在目标环境验证；页面可见性测试使用 DOM 事件模拟。
